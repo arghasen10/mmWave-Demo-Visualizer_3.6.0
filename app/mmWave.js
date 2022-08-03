@@ -59,6 +59,7 @@ var ConfigData;
 var gDataPortBaudrate = 921600;
 var playbacktimerId;
 var playbackDataStream; 
+var mybuttonstatus = 0;
 var toolTipText= "Allowed Commands are: "
 var list_of_realtime_cmds = {
     "xWR64xx": [
