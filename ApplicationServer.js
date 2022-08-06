@@ -61,6 +61,7 @@ const serve_static_1 = __importDefault(require("serve-static"));
 const http_1 = __importDefault(require("http"));
 const os_1 = __importStar(require("os"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
+const fs = __importDefault(require("fs"));
 const url_1 = __importDefault(require("url"));
 const child_process_1 = __importDefault(require("child_process"));
 const TargetConfig_1 = require("./TargetConfig");
@@ -238,34 +239,6 @@ class ApplicationServer {
                             this.shutdown(0);
                         }
                         break;
-                    case 'postdata':
-                        console.log('Data Post Received');
-                        if (req.method == 'POST') {
-                            var body = '';
-                        
-                            req.on('data', function (data) {
-                                body += data;
-                            });
-                                
-                            req.on('end', function () {
-                                body += '\n';
-                                activity_str = body.substring(body.indexOf('activity')+11);
-                                activity_str = activity_str.substring(0, activity_str.indexOf('"}'));
-                                activity_str = activity_str + '.txt';
-                                if (fs.existsSync(activity_str)){
-                                    console.log('File already exists');
-                                }
-                                else{
-                                    fs.closeSync(fs.openSync(activity_str, 'w'));
-                                }
-                                fs.appendFile(activity_str, body, function (err) {
-                                    if (err) throw err;
-                                    console.log('Saved! ' + body.length);
-                                    });
-                            });
-                        }
-                        _endRequest(200, '{}');
-                    break;
                 }
                 /* default route */
             }

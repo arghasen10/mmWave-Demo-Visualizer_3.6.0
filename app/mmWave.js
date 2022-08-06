@@ -2393,9 +2393,6 @@ var process1 = function (bytevec) {
         ...sideInfo
     };
     if (mybuttonstatus == 1){
-        var timeframe = document.getElementById('ti_widget_textbox_User_timeframe').value;
-        if(seconds<=timeframe)
-        {
             var reposnsetext = document.getElementById('ti_widget_textbox_User_activity').value;
             console.log('responsetext', reposnsetext);
             activityRes = {activity: reposnsetext};
@@ -2403,21 +2400,28 @@ var process1 = function (bytevec) {
                 ...ObjRes,
                 ...activityRes
             };
-            console.log(ObjRes['activity']);
-            async function postdata () {
-            const rawResponse = await fetch('/api/postdata', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(ObjRes)
-            });
-            const content = await rawResponse.json();
-        
-            console.log("posted data");
-            } postdata();
-        }
+            console.log('started data posting');
+
+            async function postData(url = '', data = {}) {
+                const response = await fetch(url, {
+                  method: 'POST', 
+                  mode: 'cors', 
+                  cache: 'no-cache', 
+                  credentials: 'same-origin', 
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  redirect: 'follow', 
+                  referrerPolicy: 'no-referrer', 
+                  body: JSON.stringify(data) 
+                });
+                return response.json(); 
+              }
+              
+              postData('http://localhost:8080/', { answer: ObjRes })
+                .then((data) => {
+                  console.log(data); 
+                });
     }
     
 
@@ -2838,7 +2842,7 @@ var processDetectedPoints = function (bytevec, byteVecIdx, Params) {
         }
     } // end if (Params.guiMonitor.detectedObjects == 1)
     elapsed_time.total_det_obj_process = new Date().getTime() - proc_start_time;
-    return { rangeIdx: rangeIdx, dopplerIdx: dopplerIdx, numDetectedObj: numDetectedObj }
+    return { rangeIdx: rangeIdx, dopplerIdx: dopplerIdx, numDetectedObj: numDetectedObj, x_coord: x_coord, y_coord: y_coord, z_coord: z_coord }
 };
 
 /* 
