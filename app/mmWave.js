@@ -59,6 +59,7 @@ var ConfigData;
 var gDataPortBaudrate = 921600;
 var playbacktimerId;
 var playbackDataStream; 
+var mybuttonstatus = 0;
 var toolTipText= "Allowed Commands are: "
 var list_of_realtime_cmds = {
     "xWR64xx": [
@@ -1263,33 +1264,6 @@ var stoprecording = function() {
     console.log('Recording stopped');
 }
 
-if (mybuttonstatus == 1){
-    var timeframe = document.getElementById('ti_widget_textbox_User_timeframe').value;
-    if(seconds<=timeframe)
-    {
-        var reposnsetext = document.getElementById('ti_widget_textbox_User_activity').value;
-        console.log('responsetext', reposnsetext);
-        activityRes = {activity: reposnsetext};
-        ObjRes = {
-            ...ObjRes,
-            ...activityRes
-        };
-        console.log(ObjRes['activity']);
-        async function postdata () {
-        const rawResponse = await fetch('/api/postdata', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(ObjRes)
-        });
-        const content = await rawResponse.json();
-    
-        console.log("posted data");
-        } postdata();
-    }
-}
 
 /* add delim to the cmd lines array and save to profile.cfg file on user's PC */
 var saveProfileToPC = function (cfg) {
@@ -2312,6 +2286,13 @@ var process1 = function (bytevec) {
     //Cache the latest frameNumber and deletes the old frameNumber
     var detObjRes = {};
     var sideInfo  = {};
+    var rangeObjRes = {};
+    var noiseObjRes = {};
+    var azimObjRes = {};
+    var doppObjRes = {};
+    var statsObjRes = {};
+    var ObjRes = {};
+    var azimelevObjRes={};
     
     Params.scatter_data.frameNumList.shift();
     Params.scatter_data.frameNumList.push(Params.frameNumber);
@@ -2344,21 +2325,21 @@ var process1 = function (bytevec) {
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_RANGE_PROFILE) {
             Params.rangeProfile_byteVecIdx = byteVecIdx;
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_NOISE_PROFILE) {
-            processRangeNoiseProfile(bytevec, byteVecIdx, Params, false);
+            noiseObjRes=processRangeNoiseProfile(bytevec, byteVecIdx, Params, false);
             gatherParamStats(Params.plot.noiseStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_AZIMUT_STATIC_HEAT_MAP) {
-            processAzimuthHeatMap(bytevec, byteVecIdx, Params);
+            azimObjRes=processAzimuthHeatMap(bytevec, byteVecIdx, Params);
             gatherParamStats(Params.plot.azimuthStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_RANGE_DOPPLER_HEAT_MAP) {
-            processRangeDopplerHeatMap(bytevec, byteVecIdx, Params);
+            doppObjRes=processRangeDopplerHeatMap(bytevec, byteVecIdx, Params);
             gatherParamStats(Params.plot.dopplerStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_STATS) {
-            processStatistics(bytevec, byteVecIdx, Params);
+            statsObjRes=processStatistics(bytevec, byteVecIdx, Params);
             gatherParamStats(Params.plot.cpuloadStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_DETECTED_POINTS_SIDE_INFO) {
             Params.sideInfo_byteVecIdx = byteVecIdx;
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_AZIMUT_ELEVATION_STATIC_HEAT_MAP) {
-            processAzimuthElevHeatMap(bytevec, byteVecIdx, Params);
+            azimelevObjRes=processAzimuthElevHeatMap(bytevec, byteVecIdx, Params);
             gatherParamStats(Params.plot.azimuthElevStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_TEMPERATURE_STATS) {
             processTemperatureStatistics(bytevec, byteVecIdx, Params);
@@ -2393,9 +2374,56 @@ var process1 = function (bytevec) {
     if(Params.rangeProfile_byteVecIdx > -1)
     {
         start_tlv_ticks = getTimeDiff(0);
-        processRangeNoiseProfile(bytevec, Params.rangeProfile_byteVecIdx, Params, true, detObjRes);
+        rangeObjRes=processRangeNoiseProfile(bytevec, Params.rangeProfile_byteVecIdx, Params, true, detObjRes);
         gatherParamStats(Params.plot.rangeStats, getTimeDiff(start_tlv_ticks));
-    }        
+    }  
+    var today = new Date();
+    datenow = today.getUTCDate()+'/'+today.getMonth()+'/'+today.getFullYear();
+    timenow = today.getHours() + "_" + today.getMinutes() + "_" + today.getSeconds();
+    timeRes = {datenow: datenow, timenow:timenow};
+    ObjRes = {
+        ...timeRes,
+        ...detObjRes,
+        ...rangeObjRes,
+        ...noiseObjRes,
+        ...azimObjRes,
+        ...doppObjRes,
+        ...statsObjRes,
+        ...azimelevObjRes,
+        ...sideInfo
+    };
+    if (mybuttonstatus == 1){
+            var reposnsetext = document.getElementById('ti_widget_textbox_User_activity').value;
+            console.log('responsetext', reposnsetext);
+            activityRes = {activity: reposnsetext};
+            ObjRes = {
+                ...ObjRes,
+                ...activityRes
+            };
+            console.log('started data posting');
+
+            async function postData(url = '', data = {}) {
+                const response = await fetch(url, {
+                  method: 'POST', 
+                  mode: 'cors', 
+                  cache: 'no-cache', 
+                  credentials: 'same-origin', 
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  redirect: 'follow', 
+                  referrerPolicy: 'no-referrer', 
+                  body: JSON.stringify(data) 
+                });
+                return response.json(); 
+              }
+              
+              postData('http://localhost:8080/', { answer: ObjRes })
+                .then((data) => {
+                  console.log(data); 
+                });
+    }
+    
 
             
     /*Make sure that scatter plot is updated when advanced frame config
@@ -2814,7 +2842,7 @@ var processDetectedPoints = function (bytevec, byteVecIdx, Params) {
         }
     } // end if (Params.guiMonitor.detectedObjects == 1)
     elapsed_time.total_det_obj_process = new Date().getTime() - proc_start_time;
-    return { rangeIdx: rangeIdx, dopplerIdx: dopplerIdx, numDetectedObj: numDetectedObj }
+    return { rangeIdx: rangeIdx, dopplerIdx: dopplerIdx, numDetectedObj: numDetectedObj, x_coord: x_coord, y_coord: y_coord, z_coord: z_coord }
 };
 
 /* 
@@ -2969,6 +2997,12 @@ var processRangeNoiseProfile = function (bytevec, byteVecIdx, Params, isRangePro
     plotredraw(templateObj.$.ti_widget_plot2);
     elapsed_time.logMagRange = new Date().getTime() - start_time;
     //}
+    if (isRangeProfile == true){
+        return { rp_y: rp.valueOf() }
+    }
+    else{
+        return { noiserp_y: rp.valueOf() }
+    } 
 };
 
 var processAzimuthHeatMap = function (bytevec, byteVecIdx, Params) {
@@ -3052,6 +3086,7 @@ var processAzimuthHeatMap = function (bytevec, byteVecIdx, Params) {
         
         elapsed_time.rangeAzimuthHeatMap = [start_time2 - start_time, start_time3 - start_time2, new Date().getTime() - start_time3];
     }
+    return { azimuthz: zi }
 };
 
 
@@ -3320,6 +3355,7 @@ var processAzimuthElevHeatMap = function (bytevec, byteVecIdx, Params) {
         
         elapsed_time.rangeAzimuthHeatMap = [start_time2 - start_time, start_time3 - start_time2, new Date().getTime() - start_time3];
     }
+    return { azimuthelev: zi }
 };
 
 
@@ -3364,7 +3400,7 @@ var processRangeDopplerHeatMap = function (bytevec, byteVecIdx, Params) {
         
         elapsed_time.rangeDopplerHeatMap = new Date().getTime() - start_time;
     }
-    return elapsed_time;
+    return { doppz: rangeDoppler }
 };
 
 var processSideInfo = function (bytevec, byteVecIdx, Params) {
@@ -3485,6 +3521,9 @@ var processStatistics = function (bytevec, byteVecIdx, Params) {
             plotredraw(templateObj.$.ti_widget_plot5);
         }
     }
+    return { interFrameProcessingTime: Params.interFrameProcessingTime[subFrameNum], interFrameProcessingMargin: Params.interFrameProcessingMargin[subFrameNum], 
+        interChirpProcessingMargin: Params.interChirpProcessingMargin[subFrameNum], transmitOutputTime: Params.transmitOutputTime[subFrameNum],
+        activeFrameCPULoad: Params.activeFrameCPULoad[subFrameNum], interFrameCPULoad: Params.interFrameCPULoad[subFrameNum] }
 };
 
 
