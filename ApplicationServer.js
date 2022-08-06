@@ -61,7 +61,6 @@ const serve_static_1 = __importDefault(require("serve-static"));
 const http_1 = __importDefault(require("http"));
 const os_1 = __importStar(require("os"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
-const fs = __importDefault(require("fs"));
 const url_1 = __importDefault(require("url"));
 const child_process_1 = __importDefault(require("child_process"));
 const TargetConfig_1 = require("./TargetConfig");
