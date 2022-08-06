@@ -2292,7 +2292,7 @@ var process1 = function (bytevec) {
     var doppObjRes = {};
     var statsObjRes = {};
     var ObjRes = {};
-    var elevObjRes={};
+    var azimelevObjRes={};
     
     Params.scatter_data.frameNumList.shift();
     Params.scatter_data.frameNumList.push(Params.frameNumber);
@@ -2339,7 +2339,7 @@ var process1 = function (bytevec) {
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_DETECTED_POINTS_SIDE_INFO) {
             Params.sideInfo_byteVecIdx = byteVecIdx;
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_AZIMUT_ELEVATION_STATIC_HEAT_MAP) {
-            elevObjRes=processAzimuthElevHeatMap(bytevec, byteVecIdx, Params);
+            azimelevObjRes=processAzimuthElevHeatMap(bytevec, byteVecIdx, Params);
             gatherParamStats(Params.plot.azimuthElevStats, getTimeDiff(start_tlv_ticks));
         } else if (tlvtype == TLV_type.MMWDEMO_OUTPUT_MSG_TEMPERATURE_STATS) {
             processTemperatureStatistics(bytevec, byteVecIdx, Params);
@@ -2389,7 +2389,8 @@ var process1 = function (bytevec) {
         ...azimObjRes,
         ...doppObjRes,
         ...statsObjRes,
-        ...elevObjRes
+        ...azimelevObjRes,
+        ...sideInfo
     };
     if (mybuttonstatus == 1){
         var timeframe = document.getElementById('ti_widget_textbox_User_timeframe').value;
